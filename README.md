@@ -83,7 +83,7 @@ I was helpful to consult the [Python controller code](https://github.com/udacity
 
 Quad behaviour
 <p align="center">
-<img src="animations/Scenario2_AltitudeControl.mp4" width="500"/>
+<img src="animations/Scenario2_AltitudeControl.gif" width="500"/>
 </p>
 
 
@@ -95,7 +95,7 @@ Quad behaviour
 
 Quad behaviour
 <p align="center">
-<img src="animations/Scenario3_PositionControl.mp4" width="500"/>
+<img src="animations/Scenario3_PositionControl.gif" width="500"/>
 </p>
 
 ### Non-idealities and robustness (scenario 4) ###
@@ -106,7 +106,7 @@ Comment: In addtion to adapt the controler I also changed the inital mass of the
 
 Quad behaviour
 <p align="center">
-<img src="animations/Scenario4_Noidealities.mp4" width="500"/>
+<img src="animations/Scenario4_Noidealities.gif" width="500"/>
 </p>
 
 
@@ -114,5 +114,5 @@ Quad behaviour
 
 Quad behaviour
 <p align="center">
-<img src="animations/Scenario5_TrajectoryFollow.mp4" width="500"/>
+<img src="animations/Scenario5_TrajectoryFollow.gif" width="500"/>
 </p>
