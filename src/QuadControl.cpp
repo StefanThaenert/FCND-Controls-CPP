@@ -70,10 +70,21 @@ VehicleCommand QuadControl::GenerateMotorCommands(float collThrustCmd, V3F momen
 
   ////////////////////////////// BEGIN STUDENT CODE ///////////////////////////
 
-  cmd.desiredThrustsN[0] = mass * 9.81f / 4.f; // front left
-  cmd.desiredThrustsN[1] = mass * 9.81f / 4.f; // front right
-  cmd.desiredThrustsN[2] = mass * 9.81f / 4.f; // rear left
-  cmd.desiredThrustsN[3] = mass * 9.81f / 4.f; // rear right
+  //cmd.desiredThrustsN[0] = mass * 9.81f / 4.f; // front left
+  //cmd.desiredThrustsN[1] = mass * 9.81f / 4.f; // front right
+  //cmd.desiredThrustsN[2] = mass * 9.81f / 4.f; // rear left
+  //cmd.desiredThrustsN[3] = mass * 9.81f / 4.f; // rear right
+
+  float l = L / sqrtf(2.f);
+  float t1 = momentCmd.x / l;
+  float t2 = momentCmd.y / l;
+  float t3 = -momentCmd.z / kappa;
+  float t4 = collThrustCmd;
+
+  cmd.desiredThrustsN[0] = (t1 + t2 + t3 + t4) / 4.f;  // front left  - f1
+  cmd.desiredThrustsN[1] = (-t1 + t2 - t3 + t4) / 4.f; // front right - f2
+  cmd.desiredThrustsN[2] = (t1 - t2 - t3 + t4) / 4.f; // rear left   - f4
+  cmd.desiredThrustsN[3] = (-t1 - t2 + t3 + t4) / 4.f; // rear right  - f3
 
   /////////////////////////////// END STUDENT CODE ////////////////////////////
 
@@ -98,6 +109,19 @@ V3F QuadControl::BodyRateControl(V3F pqrCmd, V3F pqr)
 
   ////////////////////////////// BEGIN STUDENT CODE ///////////////////////////
 
+  ////////////////Comparable Python Code:////////////////
+
+  // MOI = np.array([0.005, 0.005, 0.01])
+  // moment_cmd = MOI * np.multiply(self.body_rate_kp, (body_rate_cmd - body_rate))
+  // return moment_cmd
+
+  //////////////////////////////////////////////////////
+
+  V3F I;
+  I.x = Ixx;
+  I.y = Iyy;
+  I.z = Izz;
+  momentCmd = I * kpPQR * (pqrCmd - pqr);
   
 
   /////////////////////////////// END STUDENT CODE ////////////////////////////
@@ -129,6 +153,48 @@ V3F QuadControl::RollPitchControl(V3F accelCmd, Quaternion<float> attitude, floa
 
   ////////////////////////////// BEGIN STUDENT CODE ///////////////////////////
 
+  ////////////////Comparable Python Code:////////////////
+
+  //if thrust_cmd > 0.:
+  //    c = -thrust_cmd / DRONE_MASS_KG;
+  //    b_x_c, b_y_c = np.clip(acceleration_cmd / c, -1., 1)
+  //    rot_mat = euler2RM(*attitude)
+  //    b_x_err = b_x_c - rot_mat[0, 2]
+  //    b_x_p_term = self.roll_pitch_kp_roll * b_x_err
+
+  //    b_y = rot_mat[1, 2]
+  //    b_y_err = b_y_c - b_y
+  //    b_y_p_term = self.roll_pitch_kp_pitch * b_y_err
+
+  //    rot_mat1 = np.array([[rot_mat[1, 0], -rot_mat[0, 0]], [rot_mat[1, 1], -rot_mat[0, 1]]] ) / rot_mat[2, 2]
+  //    rot_rate = np.matmul(rot_mat1, np.array([b_x_p_term, b_y_p_term]).T)
+  //    p_c = rot_rate[0]
+  //    q_c = rot_rate[1]
+  //    return np.array([p_c, q_c])
+  //else:
+  //    return np.array([0., 0.])
+
+  //////////////////////////////////////////////////////
+  
+  if (collThrustCmd > 0) {
+      float c = -collThrustCmd / mass;
+      float b_x_cmd = CONSTRAIN(accelCmd.x / c, -maxTiltAngle, maxTiltAngle);
+      float b_x_err = b_x_cmd - R(0, 2);
+      float b_x_p_term = kpBank * b_x_err;
+
+      float b_y_cmd = CONSTRAIN(accelCmd.y / c, -maxTiltAngle, maxTiltAngle);
+      float b_y_err = b_y_cmd - R(1, 2);
+      float b_y_p_term = kpBank * b_y_err;
+
+      pqrCmd.x = (R(1, 0) * b_x_p_term - R(0, 0) * b_y_p_term) / R(2, 2);
+      pqrCmd.y = (R(1, 1) * b_x_p_term - R(0, 1) * b_y_p_term) / R(2, 2);
+  }
+  else {
+      pqrCmd.x = 0.0;
+      pqrCmd.y = 0.0;
+  }
+
+  pqrCmd.z = 0;
 
 
   /////////////////////////////// END STUDENT CODE ////////////////////////////
@@ -161,6 +227,35 @@ float QuadControl::AltitudeControl(float posZCmd, float velZCmd, float posZ, flo
 
   ////////////////////////////// BEGIN STUDENT CODE ///////////////////////////
 
+  ////////////////Comparable Python Code:////////////////
+  //z_err = altitude_cmd - altitude
+  //    z_err_dot = vertical_velocity_cmd - vertical_velocity
+  //    b_z = euler2RM(*attitude)[2, 2]
+
+  //    u_1 = self.altitude_kp * z_err + self.altitude_kd * z_err_dot + acceleration_ff
+  //    acc = (u_1 - GRAVITY) / b_z
+
+  //    thrust = DRONE_MASS_KG * acc
+
+
+  //////////////////////////////////////////////////////
+  
+  float z_err = posZCmd - posZ;
+  float p_term = kpPosZ * z_err;
+
+  float z_dot_err = velZCmd - velZ;
+  integratedAltitudeError += z_err * dt;
+
+
+  float d_term = kpVelZ * z_dot_err + velZ;
+  float i_term = KiPosZ * integratedAltitudeError;
+  float b_z = R(2, 2);
+
+  float u_1_bar = p_term + d_term + i_term + accelZCmd;
+
+  float acc = (u_1_bar - CONST_GRAVITY) / b_z;
+
+  thrust = -mass * CONSTRAIN(acc, -maxAscentRate / dt, maxAscentRate / dt);
 
 
   /////////////////////////////// END STUDENT CODE ////////////////////////////
@@ -198,7 +293,40 @@ V3F QuadControl::LateralPositionControl(V3F posCmd, V3F velCmd, V3F pos, V3F vel
   V3F accelCmd = accelCmdFF;
 
   ////////////////////////////// BEGIN STUDENT CODE ///////////////////////////
+  
+  ////////////////Comparable Python Code:////////////////
 
+  //err_p = local_position_cmd - local_position
+  //err_dot = local_velocity_cmd - local_velocity
+
+  //return self.lateral_kp * err_p + self.lateral_kd * err_dot + acceleration_ff
+
+
+  //////////////////////////////////////////////////////
+
+  V3F kpPos;
+  kpPos.x = kpPosXY;
+  kpPos.y = kpPosXY;
+  kpPos.z = 0.f;
+
+  V3F kpVel;
+  kpVel.x = kpVelXY;
+  kpVel.y = kpVelXY;
+  kpVel.z = 0.f;
+
+  V3F capVelCmd;
+  if (velCmd.mag() > maxSpeedXY) {
+      capVelCmd = velCmd.norm() * maxSpeedXY;
+  }
+  else {
+      capVelCmd = velCmd;
+  }
+
+  accelCmd = kpPos * (posCmd - pos) + kpVel * (capVelCmd - vel) + accelCmd;
+
+  if (accelCmd.mag() > maxAccelXY) {
+      accelCmd = accelCmd.norm() * maxAccelXY;
+  }
   
 
   /////////////////////////////// END STUDENT CODE ////////////////////////////
@@ -221,7 +349,36 @@ float QuadControl::YawControl(float yawCmd, float yaw)
 
   float yawRateCmd=0;
   ////////////////////////////// BEGIN STUDENT CODE ///////////////////////////
+  
+  ////////////////Comparable Python Code:////////////////
 
+  //yaw_error = yaw_cmd - yaw
+
+  //if yaw_error > np.pi:
+  //      yaw_error = yaw_error - 2.0 * np.pi
+  //elif yaw_error < -np.pi :
+  //      yaw_error = yaw_error + 2.0 * np.pi
+
+  //r_c = self.yaw_kp * yaw_error
+
+  //return r_c
+
+  //////////////////////////////////////////////////////
+
+  float yaw_cmd_2_pi = 0;
+  if (yawCmd > 0) {
+      yaw_cmd_2_pi = fmodf(yawCmd, 2 * F_PI);
+  }
+  else {
+      yaw_cmd_2_pi = -fmodf(-yawCmd, 2 * F_PI);
+  }
+  float err = yaw_cmd_2_pi - yaw;
+  if (err > F_PI) {
+      err -= 2 * F_PI;
+  } if (err < -F_PI) {
+      err += 2 * F_PI;
+  }
+  yawRateCmd = kpYaw * err;
 
   /////////////////////////////// END STUDENT CODE ////////////////////////////
 
