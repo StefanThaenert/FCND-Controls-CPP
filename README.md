@@ -73,7 +73,10 @@ With the proper mass, your simulation should look a little like this:
 
 For this project, I buildt a controller in C++.  
 
-I was helpful to consult the [Python controller code](https://github.com/udacity/FCND-Controls/blob/solution/controller.py) as a reference. I copied a comparable python code as comment above the C++ code. In the next section I just reference to the inital task and present a short screencast of the Quad behaviour.
+I was helpful to consult the [Python controller code](https://github.com/udacity/FCND-Controls/blob/solution/controller.py) as a reference. I inserted a comparable python code as comment above the C++ code. In the next section I just reference to the inital task and present a short screencast of the Quad behaviour. 
+The main steps where the same for all parts of the controler:
+ - convert the python code into runing C++ code
+ - adapt the control parameter(s) to pass the Secenario
 
 
 ### Body rate and roll/pitch control (scenario 2) ###
@@ -102,7 +105,7 @@ Quad behaviour
 
 Adaption of Altitude Control 
 
-Comment: In addtion to adapt the controler I also changed the inital mass of the quad. 
+Comment: In addtion to adapt the controler I also increased the inital mass of the quad so that the "real" mass and the assumed mass of the quad are closer. This leads to a little overcontrol in the 2 left cases, but in total to a sufficant solution. 
 
 Quad behaviour
 <p align="center">
