@@ -117,11 +117,14 @@ V3F QuadControl::BodyRateControl(V3F pqrCmd, V3F pqr)
 
   //////////////////////////////////////////////////////
 
-  V3F I;
+  /*V3F I;
   I.x = Ixx;
   I.y = Iyy;
   I.z = Izz;
-  momentCmd = I * kpPQR * (pqrCmd - pqr);
+  momentCmd = I * kpPQR * (pqrCmd - pqr);*/
+
+  V3F rate_error = pqrCmd - pqr;
+  momentCmd = V3F(Ixx, Iyy, Izz)*kpPQR*rate_error;
   
 
   /////////////////////////////// END STUDENT CODE ////////////////////////////
@@ -176,7 +179,7 @@ V3F QuadControl::RollPitchControl(V3F accelCmd, Quaternion<float> attitude, floa
 
   //////////////////////////////////////////////////////
   
-  if (collThrustCmd > 0) {
+  if (collThrustCmd > 0.0) {
       float c = -collThrustCmd / mass;
       float b_x_cmd = CONSTRAIN(accelCmd.x / c, -maxTiltAngle, maxTiltAngle);
       float b_x_err = b_x_cmd - R(0, 2);
@@ -194,7 +197,7 @@ V3F QuadControl::RollPitchControl(V3F accelCmd, Quaternion<float> attitude, floa
       pqrCmd.y = 0.0;
   }
 
-  pqrCmd.z = 0;
+  pqrCmd.z = 0.0;
 
 
   /////////////////////////////// END STUDENT CODE ////////////////////////////
